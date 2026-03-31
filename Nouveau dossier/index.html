@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>GameVault</title>
+		<script src="https://cdn.tailwindcss.com"></script>
+	</head>
+	<body class="min-h-screen bg-slate-950 text-slate-100 antialiased">
+		<div class="relative min-h-screen">
+			<div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.2),transparent_38%),radial-gradient(circle_at_80%_20%,rgba(168,85,247,0.16),transparent_32%)]"></div>
+			<div id="toast" class="pointer-events-none fixed right-4 top-4 z-50 translate-y-2 rounded-lg border border-blue-400/40 bg-slate-900/95 px-4 py-2 text-sm font-medium text-blue-100 opacity-0 shadow-lg shadow-black/40 transition duration-300"></div>
+
+			<div class="relative z-10">
+				<header class="sticky top-0 z-20 border-b border-slate-800/80 bg-[#000000] backdrop-blur">
+					<nav class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+						<button id="logoBtn" class="text-left text-2xl font-black tracking-tight text-white">
+							<img class=" absolute top-px left-[30px] h-[70px] max-w-7xl" src="logo/steam.webp" alt="steam">
+						</button>
+
+						<div class="hidden items-center gap-3 sm:flex">
+							<button id="homeNavBtn" class="rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M21 20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V9.48907C3 9.18048 3.14247 8.88917 3.38606 8.69972L11.3861 2.47749C11.7472 2.19663 12.2528 2.19663 12.6139 2.47749L20.6139 8.69972C20.8575 8.88917 21 9.18048 21 9.48907V20ZM19 19V9.97815L12 4.53371L5 9.97815V19H19Z"></path></svg>
+							</button>
+							<button id="cartNavBtn" class="group relative rounded-lg p-2 text-slate-300 transition hover:bg-slate-800 hover:text-white" aria-label="Open cart">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l1.5 9h10.75L19 6H7" />
+									<circle cx="10" cy="19" r="1.6" />
+									<circle cx="17" cy="19" r="1.6" />
+								</svg>
+								<span id="cartCount" class="absolute -right-1 -top-1 hidden min-w-5 rounded-full bg-blue-500 px-1.5 text-center text-xs font-bold leading-5 text-white">0</span>
+							</button>
+						</div>
+
+						<button id="mobileCartBtn" class="relative rounded-lg p-2 text-slate-300 transition hover:bg-slate-800 hover:text-white sm:hidden" aria-label="Open cart">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l1.5 9h10.75L19 6H7" />
+								<circle cx="10" cy="19" r="1.6" />
+								<circle cx="17" cy="19" r="1.6" />
+							</svg>
+							<span id="mobileCartCount" class="absolute -right-1 -top-1 hidden min-w-5 rounded-full bg-blue-500 px-1.5 text-center text-xs font-bold leading-5 text-white">0</span>
+						</button>
+					</nav>
+				</header>
+
+				<main class="mx-auto w-full max-w-7xl px-4 pb-12 pt-8 sm:px-6 lg:px-8">
+					<section id="homePage" class="space-y-8">
+						<div class="space-y-2">
+							<p class="text-sm uppercase tracking-[0.2em] text-blue-400">Featured Store</p>
+							<h1 class="text-3xl font-black tracking-tight text-white sm:text-4xl">Discover Your Next Favorite Game</h1>
+							<p class="max-w-2xl text-slate-400">Browse top-rated titles, filter by genre, and build your perfect gaming library.</p>
+						</div>
+
+						<div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 shadow-xl shadow-black/30 sm:p-5">
+							<div class="flex flex-col gap-4">
+								<div class="relative">
+									<span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500">
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+											<path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m1.15-4.9a7.1 7.1 0 1 1-14.2 0 7.1 7.1 0 0 1 14.2 0Z" />
+										</svg>
+									</span>
+									<input id="searchInput" type="text" placeholder="Search for a game..." class="w-full rounded-xl border border-slate-700 bg-slate-950 py-3 pl-11 pr-4 text-sm text-slate-200 outline-none transition placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30" />
+								</div>
+
+								<div id="categoryFilters" class="flex flex-wrap gap-2"></div>
+							</div>
+						</div>
+
+						<div id="gamesGrid" class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4"></div>
+					</section>
+
+					<section id="cartPage" class="hidden space-y-6">
+						<div class="flex items-center justify-between">
+							<h2 class="text-2xl font-black tracking-tight text-white sm:text-3xl">Your Cart</h2>
+							<button id="continueShoppingBtn" class="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-blue-500 hover:text-white">Continue Shopping</button>
+						</div>
+
+						<div class="grid gap-6 lg:grid-cols-[1fr_320px]">
+							<div id="cartItems" class="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/70 p-4 sm:p-5"></div>
+
+							<aside class="h-fit rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+								<h3 class="text-lg font-bold text-white">Order Summary</h3>
+								<div class="mt-4 space-y-3 text-sm">
+									<div class="flex items-center justify-between text-slate-300">
+										<span>Items</span>
+										<span id="summaryItems">0</span>
+									</div>
+									<div class="flex items-center justify-between text-slate-300">
+										<span>Subtotal</span>
+										<span id="summarySubtotal">$0.00</span>
+									</div>
+									<div class="flex items-center justify-between text-slate-500">
+										<span>Delivery</span>
+										<span>Instant</span>
+									</div>
+								</div>
+								<div class="my-4 border-t border-slate-800"></div>
+								<div class="flex items-center justify-between text-base font-bold text-white">
+									<span>Total</span>
+									<span id="summaryTotal">$0.00</span>
+								</div>
+								<button id="checkoutBtn" class="mt-5 w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400/50">Commander</button>
+							</aside>
+						</div>
+					</section>
+				</main>
+			</div>
+		</div>
+
+		<script src="./index.js"></script>
+	</body>
+</html>
