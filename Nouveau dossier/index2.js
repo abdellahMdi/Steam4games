@@ -108,7 +108,7 @@ const showGames = () => {
     }
     
     gamesContainer.innerHTML = visible.map(game => `
-        <article class="group overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 shadow-xl shadow-black/30 transition duration-300 hover:-translate-y-1 hover:border-blue-500/60 hover:shadow-blue-500/10">
+        <article class="group overflow-hidden border border-slate-800 bg-slate-900/80 shadow-xl shadow-black/30 hover:border-blue-500/60 hover:shadow-blue-500/10">
             <div class="relative overflow-hidden">
                 <img src="${game.image}" alt="${game.title}" class="h-44 w-full object-cover transition duration-500 group-hover:scale-105" />
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/15 to-transparent"></div>
@@ -119,7 +119,7 @@ const showGames = () => {
                     <h3 class="line-clamp-1 text-lg font-bold text-white">${game.title}</h3>
                 </div>
                 <div class="flex items-center justify-between text-sm">
-                    <span class="font-semibold text-slate-100">${formatMoney(game.price)}</span>
+                    <span class="font-semibold text-slate-100">${game.price}</span>
                 </div>
                 <button type="button" data-id="${game.id}" class="add-to-cart-btn w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400/50">
                     Add to Cart
@@ -202,7 +202,7 @@ const showCart = () => {
                 <img src="${item.image}" alt="${item.title}" class="h-16 w-16 rounded object-cover">
                 <div class="flex-1">
                     <h3 class="font-semibold text-white">${item.title}</h3>
-                    <p class="text-sm text-slate-400">${formatMoney(item.price)} each</p>
+                    <p class="text-sm text-slate-400">${item.price} each</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <button type="button" class="qty-btn rounded bg-slate-700 px-2 py-1 text-white hover:bg-slate-600" data-id="${item.id}" data-delta="-1">-</button>
