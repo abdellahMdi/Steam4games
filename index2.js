@@ -1,7 +1,7 @@
 // ============================================
-// SECTION 1: OUR GAME DATA
+//GAME LIST 
 // ============================================
-const games = [
+const gameList = [
     {id:1, title:"Cyberpunk 2077", price:59.99, category:"RPG", image:"https://cdn1.epicgames.com/offer/77f2b98e2cef40c8a7437518bf420e47/EGS_Cyberpunk2077PhantomLiberty_CDPROJEKTRED_DLC_S1_2560x1440-c62f1eb1498aaea2fc109b7aa50279a3?resize=1&w=480&h=270&quality=medium", description:"Plongez dans l'avenir sombre de Night City"},
     {id:2, title:"Elden Ring", price:49.99, category:"Action", image:"https://external-game-cover-image-cf.store.on.epicgames.com/119133?resize=1&w=360&h=480&quality=medium", description:"Explorez l'Entre-terre"},
     {id:3, title:"Modern Warfare III", price:69.99, category:"FPS", image:"https://www.callofduty.com/content/dam/atvi/callofduty/cod-touchui/store/games/mw3/overview/Store_GamesPDP_Hero01.png?imwidth=1920", description:"Le combat contre la menace ultime"},
@@ -10,276 +10,310 @@ const games = [
     {id:6, title:"Starfield", price:55.00, category:"RPG", image:"https://external-game-cover-image-cf.store.on.epicgames.com/96437?resize=1&w=360&h=480&quality=medium", description:"Explorez les étoiles"}
 ];
 
-const CART_KEY = "Steam4games";
-const categories = ["All", "Action", "RPG", "FPS"];
+const STORAGE_KEY = "Steam4games";
+const gameCategories = ["All", "Action", "RPG", "FPS"];
 
 // ============================================
-// SECTION 2: APP DATA THAT CHANGES
+//INITIAL STATE FOR APP
 // ============================================
-let selectedCategory = "All";
-let searchText = "";
-let cart = [];
+let activeCategory = "All";
+let searchValue = "";
+let shoppingCart = []; 
 
 // ============================================
-// SECTION 3: GET HTML ELEMENTS
 // ============================================
-const homePage = document.getElementById("homePage");
-const cartPage = document.getElementById("cartPage");
-const gamesContainer = document.getElementById("gamesGrid");
-const cartContainer = document.getElementById("cartItems");
-const categoryContainer = document.getElementById("categoryFilters");
-const searchInput = document.getElementById("searchInput");
-const desktopCount = document.getElementById("cartCount");
-const mobileCount = document.getElementById("mobileCartCount");
-const itemsSpan = document.getElementById("summaryItems");
-const subtotalSpan = document.getElementById("summarySubtotal");
-const totalSpan = document.getElementById("summaryTotal");
-const checkoutBtn = document.getElementById("checkoutBtn");
-const toast = document.getElementById("toast");
+const homeEl = document.getElementById("homePage");
+const cartEl = document.getElementById("cartPage");
 
-let toastTimer;
+const grid = document.getElementById("gamesGrid");
+const cartBox = document.getElementById("cartItems");
+
+const categoryBox = document.getElementById("categoryFilters");
+const searchBox = document.getElementById("searchInput");
+
+const countDesktop = document.getElementById("cartCount");
+const countMobile = document.getElementById("mobileCartCount");
+
+const itemsCountEl = document.getElementById("summaryItems");
+const subtotalEl = document.getElementById("summarySubtotal");
+const totalEl = document.getElementById("summaryTotal");
+
+const orderBtn = document.getElementById("checkoutBtn");
+const toastBox = document.getElementById("toast");
+
+let toastTimeoutRef; // used to clear old timeouts
 
 // ============================================
-// SECTION 4: HELPER FUNCTIONS
+//SMALL FCTS HELPERS
 // ============================================
 
-const formatMoney = price => `$${price.toFixed(2)}`;
+// quick money formatter (probably overkill but ok)
+function formatPrice(val) {
+    return "$" + val.toFixed(2);
+}
+function showToast(msg) {
+    if (!toastBox) return;
 
-const showMessage = text => {
-    if(!toast) return;
-    toast.textContent = text;
-    toast.classList.remove("opacity-0", "translate-y-2");
-    toast.classList.add("opacity-100", "translate-y-0");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-        toast.classList.remove("opacity-100", "translate-y-0");
-        toast.classList.add("opacity-0", "translate-y-2");
+    toastBox.textContent = msg;
+    toastBox.classList.remove("opacity-0", "translate-y-2");
+    toastBox.classList.add("opacity-100", "translate-y-0");
+
+    clearTimeout(toastTimeoutRef);
+
+    toastTimeoutRef = setTimeout(() => {
+        toastBox.classList.remove("opacity-100", "translate-y-0");
+        toastBox.classList.add("opacity-0", "translate-y-2");
     }, 1500);
-};
+}
 
-const saveCart = () => {
-    try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
-    catch(e) { console.warn("Could not save cart", e); }
-};
-
-const fixQty = v => Math.max(1, parseInt(v,10) || 1);
-
-const loadCart = () => {
+// register in LoSt cart 
+function persistCart() {
     try {
-        const saved = localStorage.getItem(CART_KEY);
-        if(!saved) return;
-        const parsed = JSON.parse(saved);
-        if(!Array.isArray(parsed)) return;
-        
-        cart = parsed.filter(item => {
-            const game = games.find(g => g.id === Number(item.id));
-            return game && (item.quantity = fixQty(item.quantity));
-        }).map(item => ({...games.find(g => g.id === item.id), quantity: item.quantity}));
-        
-        saveCart();
-    } catch(e) { console.warn("Could not load cart", e); cart = []; }
-};
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(shoppingCart));
+    } catch (err) {
+        console.warn("Saving cart failed...", err);
+    }
+}
+
+function normalizeQty(q) {
+    let parsed = parseInt(q, 10);
+    if (isNaN(parsed)) parsed = 1;
+    return Math.max(1, parsed);
+}
+
+// load cart from storage
+function restoreCart() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return;
+        shoppingCart = parsed.map(item => {
+            const found = gameList.find(g => g.id === Number(item.id));
+            if (!found) return null;
+
+            return {
+                ...found,
+                quantity: normalizeQty(item.quantity)
+            };
+        }).filter(Boolean);
+
+        persistCart();
+    } catch (err) {
+        console.warn("Cart load failed", err);
+        shoppingCart = [];
+    }
+}
 
 // ============================================
-// SECTION 5: FIND GAMES TO SHOW
+//FILTER LOGIC
 // ============================================
 
-const getVisibleGames = () => games.filter(game => 
-    (selectedCategory === "All" || game.category === selectedCategory) &&
-    game.title.toLowerCase().includes(searchText.toLowerCase())
-);
+function getFilteredGames() {
+    return gameList.filter(g => {
+        const matchCategory = (activeCategory === "All" || g.category === activeCategory);
+        const matchSearch = g.title.toLowerCase().includes(searchValue.toLowerCase());
+        return matchCategory && matchSearch;
+    });
+}
 
-// ============================================
-// SECTION 6: DISPLAY FUNCTIONS
-// ============================================
 
-const showCategories = () => {
-    categoryContainer.innerHTML = categories.map(cat => `
-        <button type="button" class="category-btn rounded-lg border px-3 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 ${cat === selectedCategory ? "border-blue-500 bg-blue-500/20 text-blue-300 focus:ring-blue-500/40" : "border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-500 hover:text-white focus:ring-slate-500/40"}" data-category="${cat}">${cat}</button>
-    `).join('');
-};
 
-const showGames = () => {
-    const visible = getVisibleGames();
-    
-    if(!visible.length) {
-        gamesContainer.innerHTML = `<div class="col-span-full rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center"><p class="text-lg font-semibold text-slate-200">No games found</p><p class="mt-1 text-sm text-slate-400">Try a different keyword or category.</p></div>`;
+function renderCategories() {
+    categoryBox.innerHTML = gameCategories.map(cat => {
+        const isActive = cat === activeCategory;
+        return `
+            <button class="category-btn ${isActive ? "active-cat" : ""}" data-category="${cat}">
+                ${cat}
+            </button>
+        `;
+    }).join("");
+}
+
+function renderGames() {
+    const list = getFilteredGames();
+
+    if (!list.length) {
+        grid.innerHTML = `<p>No games found..</p>`;
         return;
     }
-    
-    gamesContainer.innerHTML = visible.map(game => `
-        <article class="group overflow-hidden border border-slate-800 bg-slate-900/80 shadow-xl shadow-black/30 hover:border-blue-500/60 hover:shadow-blue-500/10">
-            <div class="relative overflow-hidden">
-                <img src="${game.image}" alt="${game.title}" class="h-44 w-full object-cover transition duration-500 group-hover:scale-105" />
-                <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/15 to-transparent"></div>
-            </div>
-            <div class="space-y-4 p-4">
-                <div class="space-y-1">
-                    <p class="text-xs uppercase tracking-[0.18em] text-blue-300">${game.category}</p>
-                    <h3 class="line-clamp-1 text-lg font-bold text-white">${game.title}</h3>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="font-semibold text-slate-100">${game.price}</span>
-                </div>
-                <button type="button" data-id="${game.id}" class="add-to-cart-btn w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400/50">
-                    Add to Cart
-                </button>
-            </div>
-        </article>
-    `).join('');
-};
 
-// ============================================
-// SECTION 7: CART FUNCTIONS
-// ============================================
+    grid.innerHTML = list.map(g => `
+        <div class="game-card">
+            <img src="${g.image}" alt="${g.title}" />
+            <h3>${g.title}</h3>
+            <p>${g.category}</p>
+            <span>${g.price}</span> <!-- forgot formatting here earlier -->
+            <button class="add-btn" data-id="${g.id}">Add</button>
+        </div>
+    `).join("");
+}
 
-const addToCart = id => {
-    const existing = cart.find(item => item.id === id);
-    
-    if(existing) {
-        existing.quantity++;
-        showMessage(`${existing.title} quantity updated (${existing.quantity})`);
+
+function addItemToCart(id) {
+    const existing = shoppingCart.find(x => x.id === id);
+
+    if (existing) {
+        existing.quantity += 1;
+        showToast(existing.title + " qty: " + existing.quantity);
     } else {
-        const game = games.find(g => g.id === id);
-        if(!game) return;
-        cart.push({...game, quantity: 1});
-        showMessage(`${game.title} added to cart`);
-    }
-    
-    showCart();
-    updateBadges();
-    saveCart();
-};
+        const game = gameList.find(g => g.id === id);
+        if (!game) return;
 
-const changeQty = (id, delta) => {
-    const item = cart.find(i => i.id === id);
-    if(!item) return;
-    if(delta < 0 && item.quantity === 1) {
-        showMessage("Minimum quantity is 1");
+        shoppingCart.push({
+            ...game,
+            quantity: 1
+        });
+
+        showToast(game.title + " added");
+    }
+
+    renderCart();
+    updateCounters();
+    persistCart();
+}
+function updateQty(id, delta) {
+    const item = shoppingCart.find(i => i.id === id);
+    if (!item) return;
+
+    if (item.quantity === 1 && delta < 0) {
+        showToast("Can't go below 1");
         return;
     }
+
     item.quantity += delta;
-    showCart();
-    updateBadges();
-    saveCart();
-};
 
-const removeItem = id => {
-    cart = cart.filter(item => item.id !== id);
-    showCart();
-    updateBadges();
-    saveCart();
-};
+    renderCart();
+    updateCounters();
+    persistCart();
+}
 
-const placeOrder = () => {
-    if(!cart.length) {
-        showMessage("Your cart is already empty");
+function deleteItem(id) {
+    shoppingCart = shoppingCart.filter(i => i.id !== id);
+
+    renderCart();
+    updateCounters();
+    persistCart();
+}
+
+function checkout() {
+    if (!shoppingCart.length) {
+        showToast("Cart already empty...");
         return;
     }
-    cart = [];
-    showCart();
-    updateBadges();
-    saveCart();
-    showMessage("Order placed successfully");
-};
 
-const updateBadges = () => {
-    const total = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const show = total > 0;
-    
-    desktopCount.textContent = total;
-    mobileCount.textContent = total;
-    desktopCount.classList.toggle("hidden", !show);
-    mobileCount.classList.toggle("hidden", !show);
-};
+    // resetCart
+    shoppingCart = [];
 
-const showCart = () => {
-    if(!cart.length) {
-        cartContainer.innerHTML = `<div class="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center"><p class="text-lg font-semibold text-slate-200">Your cart is empty</p><p class="mt-1 text-sm text-slate-400">Add games from the Home page to see them here.</p></div>`;
+    renderCart();
+    updateCounters();
+    persistCart();
+
+    showToast("Order done ✔");
+}
+
+// ============================================
+// CART render
+// ============================================
+
+function updateCounters() {
+    let total = 0;
+    for (let i = 0; i < shoppingCart.length; i++) {
+        total += shoppingCart[i].quantity;
+    }
+
+    countDesktop.textContent = total;
+    countMobile.textContent = total;
+
+    countDesktop.classList.toggle("hidden", total === 0);
+    countMobile.classList.toggle("hidden", total === 0);
+}
+
+function renderCart() {
+    if (!shoppingCart.length) {
+        cartBox.innerHTML = "<p>Cart is empty</p>";
     } else {
-        cartContainer.innerHTML = cart.map(item => `
-            <div class="flex items-center gap-4 border-b border-slate-700 py-4">
-                <img src="${item.image}" alt="${item.title}" class="h-16 w-16 rounded object-cover">
-                <div class="flex-1">
-                    <h3 class="font-semibold text-white">${item.title}</h3>
-                    <p class="text-sm text-slate-400">${item.price} each</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button type="button" class="qty-btn rounded bg-slate-700 px-2 py-1 text-white hover:bg-slate-600" data-id="${item.id}" data-delta="-1">-</button>
-                    <span class="w-8 text-center text-white">${item.quantity}</span>
-                    <button type="button" class="qty-btn rounded bg-slate-700 px-2 py-1 text-white hover:bg-slate-600" data-id="${item.id}" data-delta="1">+</button>
-                    <button type="button" class="remove-btn ml-2 rounded bg-red-600 px-2 py-1 text-white hover:bg-red-500" data-id="${item.id}">Remove</button>
-                </div>
+        cartBox.innerHTML = shoppingCart.map(item => `
+            <div>
+                <strong>${item.title}</strong>
+                <span>${item.quantity}</span>
+                <button class="qty-btn" data-id="${item.id}" data-delta="-1">-</button>
+                <button class="qty-btn" data-id="${item.id}" data-delta="1">+</button>
+                <button class="remove-btn" data-id="${item.id}">x</button>
             </div>
-        `).join('');
+        `).join("");
     }
-    
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
-    itemsSpan.textContent = totalItems;
-    subtotalSpan.textContent = formatMoney(subtotal);
-    totalSpan.textContent = formatMoney(subtotal);
-};
+
+    // total
+    let totalItems = 0;
+    let subtotal = 0;
+
+    shoppingCart.forEach(i => {
+        totalItems += i.quantity;
+        subtotal += i.price * i.quantity;
+    });
+
+    itemsCountEl.textContent = totalItems;
+    subtotalEl.textContent = formatPrice(subtotal);
+    totalEl.textContent = formatPrice(subtotal);
+}
 
 // ============================================
-// SECTION 8: PAGE NAVIGATION
+// NAVIGATION
 // ============================================
 
-const showPage = page => {
+function switchPage(page) {
     const isHome = page === "home";
-    homePage.classList.toggle("hidden", !isHome);
-    cartPage.classList.toggle("hidden", isHome);
-};
 
-// ============================================
-// SECTION 9: SETUP EVENT LISTENERS
-// ============================================
+    homeEl.classList.toggle("hidden", !isHome);
+    cartEl.classList.toggle("hidden", isHome);
+}
 
-["logoBtn", "homeNavBtn", "continueShoppingBtn"].forEach(id => {
-    document.getElementById(id)?.addEventListener("click", () => showPage("home"));
+//////////////////////////////////////nav
+["logoBtn","homeNavBtn","continueShoppingBtn"].forEach(id => {
+    document.getElementById(id)?.addEventListener("click", () => switchPage("home"));
 });
 
-["cartNavBtn", "mobileCartBtn"].forEach(id => {
-    document.getElementById(id)?.addEventListener("click", () => showPage("cart"));
+["cartNavBtn","mobileCartBtn"].forEach(id => {
+    document.getElementById(id)?.addEventListener("click", () => switchPage("cart"));
 });
 
-searchInput.addEventListener("input", e => {
-    searchText = e.target.value;
-    showGames();
+searchBox.addEventListener("input", e => {
+    searchValue = e.target.value;
+    renderGames();
 });
 
-categoryContainer.addEventListener("click", e => {
+categoryBox.addEventListener("click", e => {
     const btn = e.target.closest(".category-btn");
-    if(!btn) return;
-    selectedCategory = btn.dataset.category;
-    showCategories();
-    showGames();
+    if (!btn) return;
+
+    activeCategory = btn.dataset.category;
+    renderCategories();
+    renderGames();
 });
 
-gamesContainer.addEventListener("click", e => {
-    const btn = e.target.closest(".add-to-cart-btn");
-    if(btn) addToCart(Number(btn.dataset.id));
+grid.addEventListener("click", e => {
+    const btn = e.target.closest(".add-btn");
+    if (btn) addItemToCart(Number(btn.dataset.id));
 });
 
-cartContainer.addEventListener("click", e => {
-    const qtyBtn = e.target.closest(".qty-btn");
-    if(qtyBtn) {
-        changeQty(Number(qtyBtn.dataset.id), Number(qtyBtn.dataset.delta));
+cartBox.addEventListener("click", e => {
+    const q = e.target.closest(".qty-btn");
+    if (q) {
+        updateQty(Number(q.dataset.id), Number(q.dataset.delta));
         return;
     }
-    const removeBtn = e.target.closest(".remove-btn");
-    if(removeBtn) removeItem(Number(removeBtn.dataset.id));
+
+    const r = e.target.closest(".remove-btn");
+    if (r) deleteItem(Number(r.dataset.id));
 });
 
-checkoutBtn?.addEventListener("click", placeOrder);
+orderBtn?.addEventListener("click", checkout);
 
-// ============================================
-// SECTION 10: START THE APP
-// ============================================
-
-showCategories();
-showGames();
-loadCart();
-showCart();
-updateBadges();
+//////////////////////////////////////////////////////////////////////////
+renderCategories();
+renderGames();
+restoreCart();
+renderCart();
+updateCounters();
