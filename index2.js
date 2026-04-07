@@ -47,7 +47,7 @@ let toastTimeoutRef; // used to clear old timeouts
 //SMALL FCTS HELPERS
 // ============================================
 
-// quick money formatter (probably overkill but ok)
+//money formatter
 function formatPrice(val) {
     return "$" + val.toFixed(2);
 }
